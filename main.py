@@ -35,6 +35,14 @@ COMMANDS = {
     "m": ( "cat Makefile | awk -F':' '/^[a-zA-Z0-9][^\$$#\/\\t=]*:([^=]|$$)/ {split($1,A,/ /);for(i in A)print A[i]}' | sort", {'{}':0},
         {
             "m": "make"
+        }),
+    "k": ( "kubectl get --all-namespaces pods",
+        {'{}':1, '{pod}': 1, '{namespace}': 0, '{n}': 0},
+        {
+            "logs": "kubectl logs -n \"{namespace}\" --tail 100 -f \"{}\"",
+            "logs0": "kubectl logs -n \"{namespace}\" --tail 0 -f \"{}\"",
+            "exec": "kubectl -n \"{namespace}\" exec -it \"{}\" -- ",
+            "k": "echo kubectl -n \"{namespace}\""
         })
 }
 
@@ -94,7 +102,11 @@ def main():
         # eg. this supports alias exec to do `docker exec {} <rest like bash>`
         if alias in aliases:
             cmd = "{} {}".format(cmd, rest)
+
+        # TODO make a debug command line flag
         #print(cmd, file=sys.stderr)
+
+        # TODO catch KeyboardInterrupt
         subprocess.run(cmd, shell=True)
 
 
