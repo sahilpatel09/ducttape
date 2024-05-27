@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 import re
 import subprocess
 import sys
@@ -17,7 +18,7 @@ COMMANDS = {
             "inspect": "docker inspect"
         }),
     # git
-    "g": ( "git branch -a | sed 's/[\* ]*//'", {'{}': 0},
+    "gb": ( "git branch -a | sed 's/[\* ]*//'", {'{}': 0},
         {
             "c": "git checkout {}",
             "co": "git checkout {}",
