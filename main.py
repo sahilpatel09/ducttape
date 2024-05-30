@@ -8,34 +8,52 @@ import sys
 # 3. mapping of aliases
 COMMANDS = {
     # docker
-    "d": ( "docker ps -a | sed 1d", {'{}': 0},
+    # TODO make extra arguement for a preview command and also a description
+    # TODO add a long name and short name alias
+    # --preview="docker inspect --format='{{json .NetworkSettings.Networks}} {{json .Mounts}} {{json .Ports}}' {1} | jq ."
+    "d": ( "docker ps -a --format='table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}' | sed 1d | sort -k2", {'{}': 0},
         {
             "logs": "docker logs -f --tail 100 {}",
             "sh": "docker exec -it {} sh",
             "exec": "docker exec -it {}",
             "start": "docker start",
             "stop": "docker stop",
-            "inspect": "docker inspect"
+            "inspect": "docker inspect",
+            "restart": "docker restart",
+            "rm": "docker rm",
+            "rmf": "docker rm -f "
+        }),
+    "di": ( "docker image ls | sed 1d", {'{}': 2},
+        {
+            "rm": "docker image rm",
+            "rmf": "docker image rm -f"
+        }),
+    "dv": ( "docker volume ls | sed 1d", {'{}': 1, '{driver}': 0},
+        {
+            "rm": "docker volume rm",
+            "rmf": "docker volume rm -f",
+            "inspect": "docker volume inspect {}"
+        }),
+    "dvv": ( "docker system df -v | sed -n '/VOLUME NAME/,/^$/ { p }'", {'{}': 0, '{link}': 1, '{size}': 2},
+        {
+            "rm": "docker volume rm",
+            "rmf": "docker volume rm -f",
+            "inspect": "docker volume inspect {}"
+        }),
+    "dn": ( "docker network ls | sed 1d", {'{}': 0, '{name}': 1, '{driver}': 2, '{scope}': 3},
+        {
+            "rm": "docker network rm",
+            "rmf": "docker network rm -f",
+            "inspect": "docker network inspect {}"
         }),
     # git
     "gb": ( "git branch -a | sed 's/[\* ]*//'", {'{}': 0},
         {
             "c": "git checkout {}",
             "co": "git checkout {}",
-            "track": "git checkout {}",
+            "track": "git checkout --track {}",
             "lg": "git lg {}",
             "diff": "git diff {}"
-        }),
-    # ps
-    "p": ( "ps -ef", {'{}': 1, '{user}': 0, '{pid}': 1, '{ppid}': 2, '{cmd}': 7}, # TODO support an array of range cmd
-        {
-            "k" : "kill",
-            "k9": "kill -9"
-        }),
-    # make
-    "m": ( "cat Makefile | awk -F':' '/^[a-zA-Z0-9][^\$$#\/\\t=]*:([^=]|$$)/ {split($1,A,/ /);for(i in A)print A[i]}' | sort", {'{}':0},
-        {
-            "m": "make"
         }),
     "k": ( "kubectl get --all-namespaces pods",
         {'{}':1, '{pod}': 1, '{namespace}': 0, '{n}': 0},
@@ -44,19 +62,52 @@ COMMANDS = {
             "logs0": "kubectl logs -n \"{namespace}\" --tail 0 -f \"{}\"",
             "exec": "kubectl -n \"{namespace}\" exec -it \"{}\" -- ",
             "k": "echo kubectl -n \"{namespace}\""
-        })
+        }),
+    # make
+    "m": ( "cat Makefile | awk -F':' '/^[a-zA-Z0-9][^\$$#\/\\t=]*:([^=]|$$)/ {split($1,A,/ /);for(i in A)print A[i]}' | sort", {'{}':0},
+        {
+            "m": "make"
+        }),
+    # ps
+    "p": ( "ps -ef", {'{}': 1, '{user}': 0, '{pid}': 1, '{ppid}': 2, '{cmd}': slice(7, None)},
+        {
+            "k" : "kill",
+            "k9": "kill -9"
+        }),
 }
 
 def remove_empty(arr):
     return [ x for x in arr if x != "" ]
 
+def ensureString(x):
+    # sometimes if we use the slice() function instead of an integer
+    # we receive a list of string rather than a string.
+    if isinstance(x, str):
+        return x
+    if isinstance(x, list):
+        return " ".join(x)
+    raise Exception('Only string or list of strings are supported')
+
+def usage():
+    commands = COMMANDS.keys()
+    return """
+ducttape <command>
+commands are:
+    {}
+    """.format(commands)
+
 def main():
     # find source (first argument means the source)
-    source = sys.argv[1]
-    source_command = COMMANDS[source][0] # TODO make error message if source is not in COMMANDS
+    try:
+        source = sys.argv[1]
+        source_command = COMMANDS[source][0]
+    except:
+        print(usage(), file=sys.stderr)
+        sys.exit(1)
 
     # filter through fzf
-    result = subprocess.run('{} | fzf -m --height 40%'.format(source_command), shell=True, stdout=subprocess.PIPE)
+    # TODO make the DUCTTAPE_FZF_OPTIONS env variable
+    result = subprocess.run('{} | fzf -m --height 40% --no-sort'.format(source_command), shell=True, stdout=subprocess.PIPE)
 
     # extract ids
     lines=result.stdout.decode().strip().split('\n')
@@ -70,7 +121,8 @@ def main():
     for line in lines:
         index = COMMANDS[source][1]['{}']
         variables = remove_empty(r.split(line))
-        identifier = variables[index]
+        # the " ".join is to support the splice() operation
+        identifier = ensureString(variables[index])
 
         alias = "echo"
         if len(sys.argv) > 2:
@@ -97,7 +149,7 @@ def main():
                 continue
 
             index = extractions[key]
-            cmd = cmd.replace(key, variables[index])
+            cmd = cmd.replace(key, ensureString(variables[index]))
 
         # if we had an alias than we happend the rest after the {}
         # eg. this supports alias exec to do `docker exec {} <rest like bash>`
@@ -107,8 +159,10 @@ def main():
         # TODO make a debug command line flag
         #print(cmd, file=sys.stderr)
 
-        # TODO catch KeyboardInterrupt
-        subprocess.run(cmd, shell=True)
+        try:
+            subprocess.run(cmd, shell=True)
+        except KeyboardInterrupt:
+            print("^C", file=sys.stderr)
 
 
 if __name__ == "__main__":
