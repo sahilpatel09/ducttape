@@ -7,9 +7,18 @@ import sys
 # 2. indice for ids or variables to extract,
 # 3. mapping of aliases
 COMMANDS = {
-    # docker
     # TODO make extra arguement for a preview command and also a description
     # TODO add a long name and short name alias
+
+    # apt
+    "a": ( "apt list | sed 's_/_ _'", {'{}': 0, '{install_status}': 1, '{description}': slice(2, None) },
+        {
+            "i": "sudo apt install",
+            "install": "sudo apt install",
+            "r": "sudo remove install",
+            "remove": "sudo remove install"
+        }),
+    # docker
     # --preview="docker inspect --format='{{json .NetworkSettings.Networks}} {{json .Mounts}} {{json .Ports}}' {1} | jq ."
     "d": ( "docker ps -a --format='table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}' | sed 1d | sort -k2", {'{}': 0},
         {
