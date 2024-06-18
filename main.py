@@ -83,6 +83,14 @@ COMMANDS = {
             "k" : "kill",
             "k9": "kill -9"
         }),
+    # System V init scripts - services
+    "s": ( "sudo service --status-all", {'{}': 3, '{status}': 1},
+        {
+            "restart": "sudo service {} restart",
+            "status": "sudo service {} status",
+            "start": "sudo service {} start",
+            "stop": "sudo service {} stop"
+        }),
 }
 
 def remove_empty(arr):
