@@ -34,6 +34,23 @@ COMMANDS = {
             "rmf": "docker rm -f "
         },
         "Manage docker conatiners"),
+    "ds": (
+        "docker service ls --format 'table {{.ID}}\t{{.Name}}\t{{.Mode}}\t{{.Replicas}}\t{{.Image}}\t{{.Ports}}' | sed 1d", 
+        {'{}': 1},
+        {
+            "su": "docker service scale {}=1",
+            "sd": "docker service scale {}=0",
+            "suq": "docker service scale -d {}=1",
+            "sdq": "docker service scale -d {}=0",
+            "scale-up": "docker service scale {}=+1",
+            "scale-down": "docker service scale {}=-1",
+            "scale": "docker service scale {}={}",
+            "rm": "docker service rm {}",
+            "inspect": "docker service inspect {}",
+            "logs": "docker service logs {}"
+        },
+        "Manage Docker services"
+    ),
     "di": ( "docker image ls | sed 1d", {'{}': 2},
         {
             "rm": "docker image rm",
