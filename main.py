@@ -102,6 +102,114 @@ COMMANDS = {
             "stop": "sudo service {} stop"
         },
         "Manage services"),
+     # disk usage
+    "du": (
+        "du -h --max-depth=1", 
+        {'{}': 0},
+        {
+            "a": "du -ah",
+            "s": "du -sh"
+        },
+        "Check disk usage"
+    ),
+    # find
+    "f": (
+        "find . -type f", 
+        {'{}': 0},
+        {
+            "name": "find . -name \"{}\"",
+            "size": "find . -size {}",
+            "type": "find . -type {}"
+        },
+        "Find files and directories"
+    ),
+    # grep
+    "g": (
+        "grep -r '' .", 
+        {'{}': 0},
+        {
+            "i": "grep -ri \"{}\" .",
+            "v": "grep -rv \"{}\" .",
+            "l": "grep -rl \"{}\" ."
+        },
+        "Search text using grep"
+    ),
+    # tar
+    "t": (
+        "tar -cvf archive.tar", 
+        {'{}': 0},
+        {
+            "x": "tar -xvf {}",
+            "z": "tar -czvf {}.tar.gz {}",
+            "j": "tar -cjvf {}.tar.bz2 {}"
+        },
+        "Create and extract tar archives"
+    ),
+    # system information
+    "sys": (
+        "uname -a", 
+        {'{}': 0},
+        {
+            "i": "uname -i",
+            "n": "uname -n",
+            "r": "uname -r",
+            "v": "uname -v"
+        },
+        "Get system information"
+    ),
+    # network information
+    "net": (
+        "ifconfig", 
+        {'{}': 0},
+        {
+            "a": "ifconfig -a",
+            "s": "ifconfig {}"
+        },
+        "Get network information"
+    ),
+    # memory usage
+    "mem": (
+        "free -h", 
+        {'{}': 0},
+        {
+            "t": "free -t",
+            "m": "free -m",
+            "g": "free -g"
+        },
+        "Check memory usage"
+    ),
+    # disk space
+    "df": (
+        "df -h", 
+        {'{}': 0},
+        {
+            "i": "df -i",
+            "T": "df -T"
+        },
+        "Check disk space"
+    ),
+    # user management
+    "user": (
+        "cat /etc/passwd", 
+        {'{}': 0},
+        {
+            "a": "sudo adduser {}",
+            "d": "sudo deluser {}",
+            "m": "sudo usermod {}"
+        },
+        "Manage users"
+    ),
+    # group management
+    "group": (
+        "cat /etc/group", 
+        {'{}': 0},
+        {
+            "a": "sudo addgroup {}",
+            "d": "sudo delgroup {}",
+            "m": "sudo groupmod {}"
+        },
+        "Manage groups"
+    ),
 }
 
 def remove_empty(arr):
@@ -157,6 +265,17 @@ def main():
     if len(sys.argv) < 3:
         print(usage(source), file=sys.stderr)
         sys.exit(0)
+
+    # TODO: make it more dynamic so the system command list will come from COMMANDS dict
+    system_commands = ["du", "f", "g", "t", "sys", "net", "mem", "df", "user", "group"]
+    if source in system_commands:
+        try:
+            result = subprocess.run(source_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            print(result.stdout.decode())
+            sys.exit(0)
+        except subprocess.CalledProcessError as e:
+            print(e.stderr.decode(), file=sys.stderr)
+            sys.exit(1)
 
     # filter through fzf
     # TODO make the DUCTTAPE_FZF_OPTIONS env variable
