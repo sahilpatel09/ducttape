@@ -79,7 +79,7 @@ Where:
 
 ## Customization
 
-You can add your own commands or modify existing ones by editing the `COMMANDS` dictionary in the `ducttape.py` file.
+You can add your own commands or modify existing ones by editing the `COMMANDS` dictionary in the `main.py` file.
 
 ## License
 
