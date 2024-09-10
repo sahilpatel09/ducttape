@@ -17,7 +17,8 @@ COMMANDS = {
             "install": "sudo apt install",
             "r": "sudo remove install",
             "remove": "sudo remove install"
-        }),
+        },
+        "Manage apt packages"),
     # docker
     # --preview="docker inspect --format='{{json .NetworkSettings.Networks}} {{json .Mounts}} {{json .Ports}}' {1} | jq ."
     "d": ( "docker ps -a --format='table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}' | sed 1d | sort -k2", {'{}': 0},
@@ -31,30 +32,35 @@ COMMANDS = {
             "restart": "docker restart",
             "rm": "docker rm",
             "rmf": "docker rm -f "
-        }),
+        },
+        "Manage docker conatiners"),
     "di": ( "docker image ls | sed 1d", {'{}': 2},
         {
             "rm": "docker image rm",
             "rmf": "docker image rm -f"
-        }),
+        },
+        "Manage docker images"),
     "dv": ( "docker volume ls | sed 1d", {'{}': 1, '{driver}': 0},
         {
             "rm": "docker volume rm",
             "rmf": "docker volume rm -f",
             "inspect": "docker volume inspect {}"
-        }),
+        },
+        "Manage docker volumes"),
     "dvv": ( "docker system df -v | sed -n '/VOLUME NAME/,/^$/ { p }'", {'{}': 0, '{link}': 1, '{size}': 2},
         {
             "rm": "docker volume rm",
             "rmf": "docker volume rm -f",
             "inspect": "docker volume inspect {}"
-        }),
+        },
+        "Manage docker volumes"),
     "dn": ( "docker network ls | sed 1d", {'{}': 0, '{name}': 1, '{driver}': 2, '{scope}': 3},
         {
             "rm": "docker network rm",
             "rmf": "docker network rm -f",
             "inspect": "docker network inspect {}"
-        }),
+        },
+        "Manage docker networks"),
     # git
     "gb": ( "git branch -a | sed 's/[\* ]*//'", {'{}': 0},
         {
@@ -63,7 +69,8 @@ COMMANDS = {
             "track": "git checkout --track {}",
             "lg": "git lg {}",
             "diff": "git diff {}"
-        }),
+        },
+        "Manage git branches"),
     "k": ( "kubectl get --all-namespaces pods",
         {'{}':1, '{pod}': 1, '{namespace}': 0, '{n}': 0},
         {
@@ -71,18 +78,21 @@ COMMANDS = {
             "logs0": "kubectl logs -n \"{namespace}\" --tail 0 -f \"{}\"",
             "exec": "kubectl -n \"{namespace}\" exec -it \"{}\" -- ",
             "k": "echo kubectl -n \"{namespace}\""
-        }),
+        },
+        "Manage kubernetes pods"),
     # make
     "m": ( "cat Makefile | awk -F':' '/^[a-zA-Z0-9][^\$$#\/\\t=]*:([^=]|$$)/ {split($1,A,/ /);for(i in A)print A[i]}' | sort", {'{}':0},
         {
             "m": "make"
-        }),
+        },
+        "Run make commands"),
     # ps
     "p": ( "ps -ef", {'{}': 1, '{user}': 0, '{pid}': 1, '{ppid}': 2, '{cmd}': slice(7, None)},
         {
             "k" : "kill",
             "k9": "kill -9"
-        }),
+        },
+        "Manage processes"),
     # System V init scripts - services
     "s": ( "sudo service --status-all", {'{}': 3, '{status}': 1},
         {
@@ -90,7 +100,8 @@ COMMANDS = {
             "status": "sudo service {} status",
             "start": "sudo service {} start",
             "stop": "sudo service {} stop"
-        }),
+        },
+        "Manage services"),
 }
 
 def remove_empty(arr):
@@ -105,13 +116,32 @@ def ensureString(x):
         return " ".join(x)
     raise Exception('Only string or list of strings are supported')
 
-def usage():
-    commands = COMMANDS.keys()
-    return """
+def usage(command=None):
+    if command and command in COMMANDS:
+        # get command description
+        command_description = COMMANDS[command][3] if len(COMMANDS[command]) > 3 else "No description available"
+        aliases = COMMANDS[command][2]
+        alias_descriptions = "\n    ".join([f"{alias} - {cmd}" for alias, cmd in aliases.items()])
+        return f"""
+Usage:
+ducttape {command} <alias>
+
+Available aliases for '{command}' 
+Description: {command_description}:
+    {alias_descriptions}
+
+Ex:
+ducttape {command} {list(aliases.keys())[0]}
+
+        """
+    else:
+        commands = [(cmd, COMMANDS[cmd][3] if len(COMMANDS[cmd]) > 3 else "No description available") for cmd in COMMANDS]
+        return """
+Usage:
 ducttape <command>
 commands are:
     {}
-    """.format(commands)
+    """.format("\n    ".join(["{} - {}".format(cmd, desc) for cmd, desc in commands]))
 
 def main():
     # find source (first argument means the source)
@@ -121,6 +151,12 @@ def main():
     except:
         print(usage(), file=sys.stderr)
         sys.exit(1)
+
+    # second argument is the alias
+    # check if we only have a command, then print usage
+    if len(sys.argv) < 3:
+        print(usage(source), file=sys.stderr)
+        sys.exit(0)
 
     # filter through fzf
     # TODO make the DUCTTAPE_FZF_OPTIONS env variable
