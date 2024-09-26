@@ -268,6 +268,68 @@ commands are:
     {}
     """.format("\n    ".join(["{} - {}".format(cmd, desc) for cmd, desc in commands]))
 
+def get_commands_list():
+    commands_list = []
+    for key, value in COMMANDS.items():
+        description = value[3] if len(value) > 3 else "No description available"
+        commands_list.append(f"{key} - {description}")
+    return "\n".join(commands_list)
+
+
+def run():
+    commands_list = get_commands_list()
+
+    result = subprocess.run(f'echo "{commands_list}" | fzf --height 40% --no-sort', shell=True, stdout=subprocess.PIPE)
+    selected_command = result.stdout.decode().strip().split(' - ')[0]
+
+    if selected_command not in COMMANDS:
+        print("Invalid command selected", file=sys.stderr)
+        sys.exit(1)
+
+    source_command = COMMANDS[selected_command][0]
+    internal_commands = COMMANDS[selected_command][2]
+
+    if not internal_commands:
+        subprocess.run(source_command, shell=True)
+        sys.exit(0)
+
+    internal_commands_list = [f"{key} - {value}" for key, value in internal_commands.items()]
+    internal_commands_str = "\n".join(internal_commands_list)
+
+    result = subprocess.run(f'echo "{internal_commands_str}" | fzf --height 40% --no-sort', shell=True, stdout=subprocess.PIPE)
+    selected_internal_command = result.stdout.decode().strip().split(' - ')[0]
+
+    if selected_internal_command not in internal_commands:
+        print("Invalid internal command selected", file=sys.stderr)
+        sys.exit(1)
+
+    # TODO: Make system command flags more dynamic
+    system_commands = ["du", "f", "g", "t", "sys", "net", "mem", "df", "user", "group"]
+    if selected_command in system_commands:
+        try:
+            print(f"Running {internal_commands[selected_internal_command]}")
+            result = subprocess.run(internal_commands[selected_internal_command], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            print(result.stdout.decode())
+            sys.exit(0)
+        except subprocess.CalledProcessError as e:
+            print(e.stderr.decode(), file=sys.stderr)
+            sys.exit(1)
+
+    items_result = subprocess.run(source_command, shell=True, stdout=subprocess.PIPE)
+    items_list = items_result.stdout.decode().strip().split('\n')
+    items_str = "\n".join(items_list)
+
+    result = subprocess.run(f'echo "{items_str}" | fzf --height 40% --no-sort', shell=True, stdout=subprocess.PIPE)
+    selected_item = result.stdout.decode().strip().split()[0]
+
+    if not selected_item:
+        print("Invalid item selected", file=sys.stderr)
+        sys.exit(1)
+
+    final_command = internal_commands[selected_internal_command].format(selected_item)
+    print(f"Running {final_command}")
+    subprocess.run(final_command, shell=True)
+
 def main():
     # find source (first argument means the source)
     try:
@@ -355,4 +417,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1:
+        main()
+    else:
+        run()
