@@ -3,18 +3,18 @@
 read -p "Enter the command name you want to use to invoke the script (default: dt): " CLI_NAME
 CLI_NAME=${CLI_NAME:-dt}
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 INSTALL_DIR="$HOME/.local/bin"
 SCRIPT_PATH="$INSTALL_DIR/${CLI_NAME}_script.py"
 CLI_PATH="$INSTALL_DIR/$CLI_NAME"
 
-if [ ! -f "$SCRIPT_DIR/main.py" ]; then
-    echo "Error: main.py not found in the current directory."
+GITHUB_URL="https://raw.githubusercontent.com/sahilpatel09/ducttape/refs/heads/master/main.py"
+
+curl -sSL "$GITHUB_URL" -o "$SCRIPT_PATH"
+if [ ! -f "$SCRIPT_PATH" ]; then
+    echo "Error: Failed to download main.py from $GITHUB_URL."
     exit 1
 fi
-
 mkdir -p "$INSTALL_DIR"
-cp "$SCRIPT_DIR/main.py" "$SCRIPT_PATH"
 
 cat > "$CLI_PATH" << EOL
 #!/bin/bash
