@@ -21,7 +21,7 @@ COMMANDS = {
         "Manage apt packages"),
     # docker
     # --preview="docker inspect --format='{{json .NetworkSettings.Networks}} {{json .Mounts}} {{json .Ports}}' {1} | jq ."
-    "d": ( "docker ps -a --format='table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}' | sed 1d | sort -k2", {'{}': 0},
+    "d": ( "docker ps --format='table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}' | sed 1d | sort -k2", {'{}': 0},
         {
             "logs": "docker logs -f --tail 100 {}",
             "sh": "docker exec -it {} sh",
@@ -33,51 +33,49 @@ COMMANDS = {
             "rm": "docker rm",
             "rmf": "docker rm -f "
         },
-        "Manage docker conatiners"),
+        "Docker containers"),
     "ds": (
-        "docker service ls --format 'table {{.ID}}\t{{.Name}}\t{{.Mode}}\t{{.Replicas}}\t{{.Image}}\t{{.Ports}}' | sed 1d", 
+        "docker service ls --format 'table {{.Name}}' | sed 1d", 
         {'{}': 1},
         {
-            "su": "docker service scale {}=1",
-            "sd": "docker service scale {}=0",
-            "suq": "docker service scale -d {}=1",
-            "sdq": "docker service scale -d {}=0",
+            "quick-scale-up": "docker service scale -d {}=1",
+            "quick-scale-down": "docker service scale -d {}=0",
             "scale-up": "docker service scale {}=+1",
             "scale-down": "docker service scale {}=-1",
             "scale": "docker service scale {}={}",
-            "rm": "docker service rm {}",
+            "remove": "docker service rm {}",
             "inspect": "docker service inspect {}",
             "logs": "docker service logs {}"
         },
-        "Manage Docker services"
+        "Docker services"
     ),
     "di": ( "docker image ls | sed 1d", {'{}': 2},
         {
             "rm": "docker image rm",
             "rmf": "docker image rm -f"
         },
-        "Manage docker images"),
+        "Docker images"),
     "dv": ( "docker volume ls | sed 1d", {'{}': 1, '{driver}': 0},
         {
             "rm": "docker volume rm",
             "rmf": "docker volume rm -f",
             "inspect": "docker volume inspect {}"
         },
-        "Manage docker volumes"),
+        "Docker volumes"),
     "dvv": ( "docker system df -v | sed -n '/VOLUME NAME/,/^$/ { p }'", {'{}': 0, '{link}': 1, '{size}': 2},
         {
             "rm": "docker volume rm",
             "rmf": "docker volume rm -f",
             "inspect": "docker volume inspect {}"
         },
-        "Manage docker volumes"),
+        "Docker volumes(System)"),
     "dn": ( "docker network ls | sed 1d", {'{}': 0, '{name}': 1, '{driver}': 2, '{scope}': 3},
         {
             "rm": "docker network rm",
             "rmf": "docker network rm -f",
             "inspect": "docker network inspect {}"
         },
-        "Manage docker networks"),
+        "Docker networks"),
     # git
     "gb": ( "git branch -a | sed 's/[\* ]*//'", {'{}': 0},
         {
@@ -87,7 +85,7 @@ COMMANDS = {
             "lg": "git lg {}",
             "diff": "git diff {}"
         },
-        "Manage git branches"),
+        "Git branches"),
     "k": ( "kubectl get --all-namespaces pods",
         {'{}':1, '{pod}': 1, '{namespace}': 0, '{n}': 0},
         {
@@ -96,20 +94,20 @@ COMMANDS = {
             "exec": "kubectl -n \"{namespace}\" exec -it \"{}\" -- ",
             "k": "echo kubectl -n \"{namespace}\""
         },
-        "Manage kubernetes pods"),
+        "Kubernetes pods"),
     # make
     "m": ( "cat Makefile | awk -F':' '/^[a-zA-Z0-9][^\$$#\/\\t=]*:([^=]|$$)/ {split($1,A,/ /);for(i in A)print A[i]}' | sort", {'{}':0},
         {
             "m": "make"
         },
-        "Run make commands"),
+        "Make commands"),
     # ps
     "p": ( "ps -ef", {'{}': 1, '{user}': 0, '{pid}': 1, '{ppid}': 2, '{cmd}': slice(7, None)},
         {
             "k" : "kill",
             "k9": "kill -9"
         },
-        "Manage processes"),
+        "Sytem Processes"),
     # System V init scripts - services
     "s": ( "sudo service --status-all", {'{}': 3, '{status}': 1},
         {
@@ -118,7 +116,7 @@ COMMANDS = {
             "start": "sudo service {} start",
             "stop": "sudo service {} stop"
         },
-        "Manage services"),
+        "System services"),
      # disk usage
     "du": (
         "du -h --max-depth=1", 
@@ -127,7 +125,7 @@ COMMANDS = {
             "a": "du -ah",
             "s": "du -sh"
         },
-        "Check disk usage"
+        "Disk usage"
     ),
     # find
     "f": (
